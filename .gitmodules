@@ -1,6 +1,6 @@
-[submodule "utils"]
-	path = utils
+[submodule "external/utils"]
+	path = external/utils
 	url = git@github.com:dden99985/utils
-[submodule "PCA9685"]
-	path = PCA9685
+[submodule "external/PCA9685"]
+	path = external/PCA9685
 	url = git@github.com:dden99985/PCA9685
