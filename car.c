@@ -5,6 +5,7 @@
 #include <logging.h>
 #include <libxml/parser.h>
 #include <libxml/tree.h>
+#include <wiringPi.h>
 #include <PCA9685.h>
 #include <car.h>
 
@@ -18,19 +19,29 @@ void CarDefaultSettings()
   // Initialize CarInfo with defaults
   CarInfo.address      = 0x40;
   CarInfo.frequency    = 0xFF;
+
+  CarInfo.piLeftA      = 0x00;
+  CarInfo.piLeftB      = 0x01;
+  CarInfo.piRightA     = 0x02;
+  CarInfo.piRightB     = 0x03;
+  CarInfo.pwmLeft      = 0x04;
+  CarInfo.pwmRight     = 0x05;
   CarInfo.minDrive     = 0x0;
   CarInfo.maxDrive     = 0x0FFF;
   CarInfo.reverseLeft  = 0;
   CarInfo.reverseRight = 0;
 
+  CarInfo.pwmSteering  = 0x01;
   CarInfo.minSteering  = 0;
   CarInfo.maxSteering  = 0x0FFF;
   CarInfo.homeSteering = 0x0800;
 
+  CarInfo.pwmPan       = 0x0E;
   CarInfo.minPan       = 0;
   CarInfo.maxPan       = 0x0FFF;
   CarInfo.homePan      = 0x0800;
 
+  CarInfo.pwmTilt      = 0x0F;
   CarInfo.minTilt      = 0;
   CarInfo.maxTilt      = 0x0FFF;
   CarInfo.homeTilt     = 0x0800;
@@ -48,6 +59,7 @@ int CarWriteSettings(char *fileName)
   xmlNode *rootNode;
   xmlNode *node = NULL;
   xmlNode *node1 = NULL;
+  xmlNode *node2 = NULL;
   char    buffer[256];
 
   // Create XML document
@@ -66,6 +78,22 @@ int CarWriteSettings(char *fileName)
   sprintf(buffer, "0x%04X", CarInfo.maxDrive);
   xmlNewTextChild(node, NULL, BAD_CAST "max", buffer);
 
+  node1 = xmlNewChild(node, NULL, BAD_CAST "address", NULL);
+  node2 = xmlNewChild(node1, NULL, BAD_CAST "RaspberryPi", NULL);
+  sprintf(buffer, "0x%02X", CarInfo.piLeftA);
+  xmlNewTextChild(node2, NULL, BAD_CAST "leftA", buffer);
+  sprintf(buffer, "0x%02X", CarInfo.piLeftB);
+  xmlNewTextChild(node2, NULL, BAD_CAST "leftB", buffer);
+  sprintf(buffer, "0x%02X", CarInfo.piRightA);
+  xmlNewTextChild(node2, NULL, BAD_CAST "rightA", buffer);
+  sprintf(buffer, "0x%02X", CarInfo.piRightB);
+  xmlNewTextChild(node2, NULL, BAD_CAST "rightB", buffer);
+  node2 = xmlNewChild(node1, NULL, BAD_CAST "PWM", NULL);
+  sprintf(buffer, "0x%02X", CarInfo.pwmLeft);
+  xmlNewTextChild(node2, NULL, BAD_CAST "left", buffer);
+  sprintf(buffer, "0x%02X", CarInfo.pwmRight);
+  xmlNewTextChild(node2, NULL, BAD_CAST "right", buffer);
+
   node1 = xmlNewChild(node, NULL, BAD_CAST "reverse", NULL);
   sprintf(buffer, "%s", CarInfo.reverseLeft ? "True" : "False");
   xmlNewTextChild(node1, NULL, BAD_CAST "left", buffer);
@@ -73,6 +101,8 @@ int CarWriteSettings(char *fileName)
   xmlNewTextChild(node1, NULL, BAD_CAST "right", buffer);
 
   node1 = xmlNewChild(rootNode, NULL, BAD_CAST "steering", NULL);
+  sprintf(buffer, "0x%02X", CarInfo.pwmSteering);
+  xmlNewTextChild(node1, NULL, BAD_CAST "pwmAddress", buffer);
   sprintf(buffer, "0x%04X", CarInfo.minSteering);
   xmlNewTextChild(node1, NULL, BAD_CAST "min", buffer);
   sprintf(buffer, "0x%04X", CarInfo.maxSteering);
@@ -81,6 +111,8 @@ int CarWriteSettings(char *fileName)
   xmlNewTextChild(node1, NULL, BAD_CAST "home", buffer);
 
   node1 = xmlNewChild(rootNode, NULL, BAD_CAST "pan", NULL);
+  sprintf(buffer, "0x%02X", CarInfo.pwmPan);
+  xmlNewTextChild(node1, NULL, BAD_CAST "pwmAddress", buffer);
   sprintf(buffer, "0x%04X", CarInfo.minPan);
   xmlNewTextChild(node1, NULL, BAD_CAST "min", buffer);
   sprintf(buffer, "0x%04X", CarInfo.maxPan);
@@ -89,6 +121,8 @@ int CarWriteSettings(char *fileName)
   xmlNewTextChild(node1, NULL, BAD_CAST "home", buffer);
 
   node1 = xmlNewChild(rootNode, NULL, BAD_CAST "tilt", NULL);
+  sprintf(buffer, "0x%02X", CarInfo.pwmTilt);
+  xmlNewTextChild(node1, NULL, BAD_CAST "pwmAddress", buffer);
   sprintf(buffer, "0x%04X", CarInfo.minTilt);
   xmlNewTextChild(node1, NULL, BAD_CAST "min", buffer);
   sprintf(buffer, "0x%04X", CarInfo.maxTilt);
@@ -136,6 +170,19 @@ void CarProcessSettingsNode(xmlNode *node, char *section)
         else if(xmlStrcasecmp(section, "car/drive/max") == 0)
           CarInfo.maxDrive = (int)strtol(xmlBufferContent(buffer), NULL, 0);
 
+        else if(xmlStrcasecmp(section, "car/drive/address/RaspberryPi/leftA") == 0)
+          CarInfo.piLeftA = (int)strtol(xmlBufferContent(buffer), NULL, 0);
+        else if(xmlStrcasecmp(section, "car/drive/address/RaspberryPi/leftB") == 0)
+          CarInfo.piLeftB = (int)strtol(xmlBufferContent(buffer), NULL, 0);
+        else if(xmlStrcasecmp(section, "car/drive/address/RaspberryPi/rightA") == 0)
+          CarInfo.piRightA = (int)strtol(xmlBufferContent(buffer), NULL, 0);
+        else if(xmlStrcasecmp(section, "car/drive/address/RaspberryPi/rightB") == 0)
+          CarInfo.piRightB = (int)strtol(xmlBufferContent(buffer), NULL, 0);
+        else if(xmlStrcasecmp(section, "car/drive/address/PWM/left") == 0)
+          CarInfo.pwmLeft = (int)strtol(xmlBufferContent(buffer), NULL, 0);
+        else if(xmlStrcasecmp(section, "car/drive/address/PWM/right") == 0)
+          CarInfo.pwmRight = (int)strtol(xmlBufferContent(buffer), NULL, 0);
+
         else if(xmlStrcasecmp(section, "car/drive/reverse/left") == 0)
         {
           if(xmlStrcasecmp(xmlBufferContent(buffer), "0") == 0 ||
@@ -153,6 +200,8 @@ void CarProcessSettingsNode(xmlNode *node, char *section)
             CarInfo.reverseRight = 1;
         }
 
+        else if(xmlStrcasecmp(section, "car/steering/pwmAddress") == 0)
+          CarInfo.pwmSteering = (int)strtol(xmlBufferContent(buffer), NULL, 0);
         else if(xmlStrcasecmp(section, "car/steering/min") == 0)
           CarInfo.minSteering = (int)strtol(xmlBufferContent(buffer), NULL, 0);
         else if(xmlStrcasecmp(section, "car/steering/max") == 0)
@@ -160,6 +209,8 @@ void CarProcessSettingsNode(xmlNode *node, char *section)
         else if(xmlStrcasecmp(section, "car/steering/home") == 0)
           CarInfo.homeSteering = (int)strtol(xmlBufferContent(buffer), NULL, 0);
 
+        else if(xmlStrcasecmp(section, "car/tilt/pwmAddress") == 0)
+          CarInfo.pwmTilt = (int)strtol(xmlBufferContent(buffer), NULL, 0);
         else if(xmlStrcasecmp(section, "car/tilt/min") == 0)
           CarInfo.minTilt = (int)strtol(xmlBufferContent(buffer), NULL, 0);
         else if(xmlStrcasecmp(section, "car/tilt/max") == 0)
@@ -167,6 +218,8 @@ void CarProcessSettingsNode(xmlNode *node, char *section)
         else if(xmlStrcasecmp(section, "car/tilt/home") == 0)
           CarInfo.homeTilt = (int)strtol(xmlBufferContent(buffer), NULL, 0);
 
+        else if(xmlStrcasecmp(section, "car/pan/pwmAddress") == 0)
+          CarInfo.pwmPan = (int)strtol(xmlBufferContent(buffer), NULL, 0);
         else if(xmlStrcasecmp(section, "car/pan/min") == 0)
           CarInfo.minPan = (int)strtol(xmlBufferContent(buffer), NULL, 0);
         else if(xmlStrcasecmp(section, "car/pan/max") == 0)
@@ -231,9 +284,69 @@ int CarReadSettings(char *fileName)
 
 int CarInit()
 {
+  log_function("CarInit()...\n");
+
+  int status;
+
   // Read settings into CarInfo
   CarReadSettings(CAR_CONFIGFILE);
-
   CarWriteSettings(CAR_CONFIGFILE);
-  
+
+  pinMode(CarInfo.piLeftA, OUTPUT);
+  pinMode(CarInfo.piLeftB, OUTPUT);
+  pinMode(CarInfo.piRightA, OUTPUT);
+  pinMode(CarInfo.piRightB, OUTPUT);
+
+  if ((hPCA9685 = PCA9685Init(0x40, 200)) == -1)
+  {
+    log_level(LOG_ERROR, "Error: %d\n       %s\n", errno, strerror(errno));
+    return 1;
+  }
+
+
+  if((status = PCA9685WriteLedDuty(hPCA9685, CarInfo.pwmLeft, 100)) != 0)
+    fprintf(stderr, "I2C Error: %d - %s\n", errno, strerror(errno));
+  if((status = PCA9685WriteLedDuty(hPCA9685, CarInfo.pwmRight, 100)) != 0)
+    fprintf(stderr, "I2C Error: %d - %s\n", errno, strerror(errno));
+
+  digitalWrite(CarInfo.piLeftA, HIGH);
+  digitalWrite(CarInfo.piLeftB, LOW);
+  digitalWrite(CarInfo.piRightA, HIGH);
+  digitalWrite(CarInfo.piRightB, LOW);
+
+  int q;
+  for(q = 4096; q > 0; q--)
+  {
+    if((status = PCA9685WriteLedDuty(hPCA9685, CarInfo.pwmLeft, q)) != 0)
+      fprintf(stderr, "I2C Error: %d - %s\n", errno, strerror(errno));
+    if((status = PCA9685WriteLedDuty(hPCA9685, CarInfo.pwmRight, q)) != 0)
+      fprintf(stderr, "I2C Error: %d - %s\n", errno, strerror(errno));
+    delay(1);
+  }
+
+  delay(1000);
+
+  digitalWrite(CarInfo.piLeftA, LOW);
+  digitalWrite(CarInfo.piLeftB, HIGH);
+  digitalWrite(CarInfo.piRightA, LOW);
+  digitalWrite(CarInfo.piRightB, HIGH);
+
+  for(q = 0; q <= 4096; q++)
+  {
+    if((status = PCA9685WriteLedDuty(hPCA9685, CarInfo.pwmLeft, q)) != 0)
+      fprintf(stderr, "I2C Error: %d - %s\n", errno, strerror(errno));
+    if((status = PCA9685WriteLedDuty(hPCA9685, CarInfo.pwmRight, q)) != 0)
+      fprintf(stderr, "I2C Error: %d - %s\n", errno, strerror(errno));
+    delay(1);
+  }
+
+  delay(1000);
+
+  digitalWrite(CarInfo.piLeftA, LOW);
+  digitalWrite(CarInfo.piLeftB, LOW);
+  digitalWrite(CarInfo.piRightA, LOW);
+  digitalWrite(CarInfo.piRightB, LOW);
+
+  log_function("CarInit DONE\n");
+    
 }
