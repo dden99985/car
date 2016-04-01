@@ -31,7 +31,7 @@ void CarDefaultSettings()
   CarInfo.reverseLeft  = 0;
   CarInfo.reverseRight = 0;
 
-  CarInfo.pwmSteering  = 0x01;
+  CarInfo.pwmSteering  = 0x00;
   CarInfo.minSteering  = 0;
   CarInfo.maxSteering  = 0x0FFF;
   CarInfo.homeSteering = 0x0800;
@@ -304,18 +304,37 @@ int CarInit()
   }
 
 
-  if((status = PCA9685WriteLedDuty(hPCA9685, CarInfo.pwmLeft, 100)) != 0)
+  if((status = PCA9685WriteLedDuty(hPCA9685, CarInfo.pwmLeft, 0)) != 0)
     fprintf(stderr, "I2C Error: %d - %s\n", errno, strerror(errno));
-  if((status = PCA9685WriteLedDuty(hPCA9685, CarInfo.pwmRight, 100)) != 0)
+  if((status = PCA9685WriteLedDuty(hPCA9685, CarInfo.pwmRight, 0)) != 0)
     fprintf(stderr, "I2C Error: %d - %s\n", errno, strerror(errno));
 
+  int q;
+  for(q = 4096; q > 0; q -= 5)
+  {
+    if((status = PCA9685WriteLedDuty(hPCA9685, CarInfo.pwmSteering, q)) != 0)
+      fprintf(stderr, "I2C Error: %d - %s\n", errno, strerror(errno));
+    delay(1);
+  }
+
+  if((status = PCA9685WriteLedDuty(hPCA9685, CarInfo.pwmSteering, CarInfo.homeSteering)) != 0)
+    fprintf(stderr, "I2C Error: %d - %s\n", errno, strerror(errno));
+
+//  if((status = PCA9685WriteLedDuty(hPCA9685, CarInfo.pwmSteering, CarInfo.homeSteering)) != 0)
+//    fprintf(stderr, "I2C Error: %d - %s\n", errno, strerror(errno));
+//  if((status = PCA9685WriteLedDuty(hPCA9685, CarInfo.pwmTilt, CarInfo.homeTilt)) != 0)
+//    fprintf(stderr, "I2C Error: %d - %s\n", errno, strerror(errno));
+//  if((status = PCA9685WriteLedDuty(hPCA9685, CarInfo.pwmPan, CarInfo.homePan)) != 0)
+//    fprintf(stderr, "I2C Error: %d - %s\n", errno, strerror(errno));
+
+/*
   digitalWrite(CarInfo.piLeftA, HIGH);
   digitalWrite(CarInfo.piLeftB, LOW);
   digitalWrite(CarInfo.piRightA, HIGH);
   digitalWrite(CarInfo.piRightB, LOW);
 
   int q;
-  for(q = 4096; q > 0; q--)
+  for(q = 4096; q > 0; q -= 5)
   {
     if((status = PCA9685WriteLedDuty(hPCA9685, CarInfo.pwmLeft, q)) != 0)
       fprintf(stderr, "I2C Error: %d - %s\n", errno, strerror(errno));
@@ -331,7 +350,7 @@ int CarInit()
   digitalWrite(CarInfo.piRightA, LOW);
   digitalWrite(CarInfo.piRightB, HIGH);
 
-  for(q = 0; q <= 4096; q++)
+  for(q = 0; q <= 4096; q += 5)
   {
     if((status = PCA9685WriteLedDuty(hPCA9685, CarInfo.pwmLeft, q)) != 0)
       fprintf(stderr, "I2C Error: %d - %s\n", errno, strerror(errno));
@@ -346,7 +365,7 @@ int CarInit()
   digitalWrite(CarInfo.piLeftB, LOW);
   digitalWrite(CarInfo.piRightA, LOW);
   digitalWrite(CarInfo.piRightB, LOW);
-
+*/
   log_function("CarInit DONE\n");
     
 }
