@@ -6,7 +6,7 @@
 #include <PCA9685.h>
 #include <logging.h>
 
-extern int DEBUG;
+extern int LOGGING;
 
 // Drive Motors
 #define DRIVE0_A	0
@@ -17,7 +17,7 @@ extern int DEBUG;
 
 main(int argc, char *argv[])
 {
-  DEBUG = LOG_ERROR | LOG_NORMAL | LOG_FUNCTION;
+  LOGGING = LOG_ERROR | LOG_NORMAL | LOG_FUNCTION;
 
   int status;
 

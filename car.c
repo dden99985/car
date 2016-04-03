@@ -261,14 +261,14 @@ int CarReadSettings(char *fileName)
   doc = xmlReadFile(fileName, NULL, 0);
   if (doc == NULL)
   {
-    log_level(LOG_NORMAL, "Config: %s does not exist.  Using defaults...\n", fileName);
+    log_message(LOG_NORMAL, "Config: %s does not exist.  Using defaults...\n", fileName);
 
     log_function("CarReadSettings DONE\n");
     return 0;
   }
 
   // Process file
-  log_level(LOG_NORMAL, "Config: %s found.  Processing...\n", fileName);
+  log_message(LOG_NORMAL, "Config: %s found.  Processing...\n", fileName);
 
   // Process all the elements
   rootElement = xmlDocGetRootElement(doc);
@@ -299,7 +299,7 @@ int CarInit()
 
   if ((hPCA9685 = PCA9685Init(0x40, 200)) == -1)
   {
-    log_level(LOG_ERROR, "Error: %d\n       %s\n", errno, strerror(errno));
+    log_message(LOG_ERROR, "Error: %d\n       %s\n", errno, strerror(errno));
     return 1;
   }
 
@@ -317,7 +317,7 @@ int CarInit()
     delay(1);
   }
 
-  if((status = PCA9685WriteLedDuty(hPCA9685, CarInfo.pwmSteering, CarInfo.homeSteering)) != 0)
+  if((status = PCA9685WriteLedDuty(hPCA9685, CarInfo.pwmSteering, 0)) != 0)
     fprintf(stderr, "I2C Error: %d - %s\n", errno, strerror(errno));
 
 //  if((status = PCA9685WriteLedDuty(hPCA9685, CarInfo.pwmSteering, CarInfo.homeSteering)) != 0)
